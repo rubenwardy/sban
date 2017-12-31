@@ -21,7 +21,6 @@ local db_version = "0.1"
 local db = _sql.open(WP.."/sban.sqlite") -- connection
 local expiry = minetest.setting_get("sban.ban_max")
 local owner = minetest.setting_get("name")
-local display_max = minetest.setting_get("sban.display_max") or 10
 local t_units = {
 	s = 1, m = 60, h = 3600,
 	d = 86400, w = 604800, M = 2592000, y = 31104000,
@@ -295,6 +294,7 @@ local function display_record(name, p_name)
 		minetest.chat_send_player(name, "No records for "..p_name)
 		return
 	end
+	local display_max = minetest.setting_get("sban.display_max") or 10
 	local privs = minetest.get_player_privs(name)
 	-- records loaded, display
 	local idx = 1
