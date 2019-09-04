@@ -1980,44 +1980,85 @@ end)
 
 -- Register callback for join event
 minetest.register_on_joinplayer(function(player)
-
 	local name = player:get_player_name()
+
+	local first = minetest.get_us_time()
+	local last = first
+	minetest.log("error", "[sban:profiler] Profiling call for player " .. name)
+	local function profile(stat)
+		local current = minetest.get_us_time()
+		local delta = (current - last) / 1000000
+		last = current
+
+		minetest.log("error", ("[sban:profiler] - %s took %.3f seconds"):format(stat, delta))
+	end
+	local function finish()
+		local current = minetest.get_us_time()
+		local delta = (current - first) / 1000000
+		minetest.log("error", ("[sban:profiler] - Total time: %.3f seconds"):format(delta))
+	end
+
+
 	local ip = minetest.get_player_ip(name)
-	if not ip then return end
+	if not ip then
+		finish()
+		return
+	end
+
+	profile("init")
+
+
 	local id = get_id(name) -- name search
+	profile("get_id")
 
 	manage_hotlist(name)
+	profile("manage_hotlist")
+
 	trim_cache()
+	profile("trim_cache")
 
 	if not id then
 		-- unknown name
 		id = get_id(ip) -- ip search
+		profile("not id: get_id")
 		if not id then
 			-- no records, create one
 			id = create_player_record(name, ip)
+			profile("not id: create_player_record")
 			if not owner_id and name == owner then
 				owner_id = id -- initialise
 			end
+			finish()
 			return
 		else
 			-- new name record for a known id
 			add_name(id, name)
+			profile("not id: add_name")
+			finish()
 			return
 		end
 	else
 		-- check ip record
 		local target_id = get_id(ip)
+		profile("id: get_id")
 		if not target_id then
 			-- unknown ip
 			add_ip(id, ip) -- new ip record
+			profile("id: add_ip")
 		elseif target_id ~= id then
 			-- ip registered to another id!
 			create_idv_record(id, target_id, ip)
+			profile("id: create_idv_record")
 			update_idv_status(ip)
+			profile("id: update_idv_status")
 		else
 			update_address(id, ip)
+			profile("id: update_address")
 		end
 		-- update record timestamp
 		update_login(id, name)
+		profile("id: update_login")
+
+		finish()
 	end
 end)
